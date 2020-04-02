@@ -1,11 +1,14 @@
 package com.example;
 
+import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.microprofile.faulttolerance.Fallback;
+import org.eclipse.microprofile.faulttolerance.Retry;
+import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.eclipse.microprofile.metrics.MetricUnits;
 import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Timed;
-
+import org.eclipse.microprofile.metrics.annotation.SimplyTimed;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,16 +26,18 @@ public class BookController {
 		this.bookService = bookService;
 	}
 
-	@Counted(name = "findAllCount", description = "How many times all the books have been fetched.")
-	@Timed(name = "findAllTimer", description = "A measure of how long it takes to retrieve all books.", unit = MetricUnits.MILLISECONDS)
+	@Timeout(value = 100)
+	@Retry(maxRetries = 1, delay = 500, jitter = 100)
+	@Fallback(fallbackMethod = "findAllFallback")
 	@GetMapping
 	public Iterable<Book> findAll() {
 		return bookService.findAll();
 	}
 
-	@GetMapping("/failing")
-	public Iterable<Book> findAllFailing() {
-		return bookService.findAllFailing();
+	@Counted(name = "fallbackCount", description = "How many times the fallback has been called.")
+	@SimplyTimed(name = "fallbackTimer", description = "Time spent inthe fallback method", unit = MetricUnits.MILLISECONDS)
+	public Iterable<Book> findAllFallback() {
+		return Collections.emptyList();
 	}
 
 	@GetMapping("/year/{lower}/{higher}")
@@ -56,3 +61,4 @@ public class BookController {
 		return bookService.findAll();
 	}
 }
+

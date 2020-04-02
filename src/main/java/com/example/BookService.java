@@ -1,10 +1,7 @@
 package com.example;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import org.eclipse.microprofile.faulttolerance.Fallback;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,17 +15,20 @@ public class BookService {
 		this.bookRepository = bookRepository;
 	}
 
+	void doDelay() {
+		int delayTime;
+		try {
+			delayTime = (int) (Math.random() * 200);
+			System.out.println("** Waiting " + delayTime + "ms **");
+			TimeUnit.MILLISECONDS.sleep(delayTime);
+		} catch (InterruptedException e) {
+			// e.printStackTrace();
+		}
+	}
+
 	public Iterable<Book> findAll() {
+		doDelay();
 		return bookRepository.findAll();
-	}
-
-	@Fallback(fallbackMethod = "emptyBooks")
-	public Iterable<Book> findAllFailing() {
-		throw new RuntimeException();
-	}
-
-	private Iterable<Book> emptyBooks() {
-		return Collections.emptyList();
 	}
 
 	public List<Book> findByPublicationYearBetween(@PathVariable Integer lower, @PathVariable Integer higher) {
@@ -38,8 +38,7 @@ public class BookService {
 	public void deleteById(@PathVariable Integer id) {
 		try {
 			bookRepository.deleteById(id);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new MissingBookException();
 		}
 	}
@@ -49,3 +48,4 @@ public class BookService {
 		return bookRepository.findAll();
 	}
 }
+
